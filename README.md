@@ -1,12 +1,13 @@
 # beneficial-use-LLM
 
-1. Run the following file to Fine-tune a pythia-2.8b model, using concatatenated blocks for CLM training
-> python pythia-2.8b-block.py
+1. Run the following command for Supervised Fine Tuning of a model (specified in a config file with other arguments)
+> python ./src/sft_plain.py --config_path ./configs/Full_SFT.yaml (or Task_SFT.yaml)
 
-2. Run the following file to Fine-tune a pythia-2.8b model, using each single example (prompt-completion supervised learning)
-> python pythia-2.8b-single.py
+2. Run the following command for Low Rank Adapted (LoRA) Supervised Fine Tuning of a model (specified in a config file with other arguments)
+> python ./src/sft_lora.py --config_path ./configs/Full_SFT.yaml (or Task_SFT.yaml)
  
-3. Run the following file to infer for training / validation examples with tuned model
-> python "Completion Performance Train.py"
-> 
-> python "Completion Performance Val.py"
+3. Run the following command for Casusal Langueg Modeling
+> python ./src/sft_lora.py --config_path ./configs/CLM.yaml 
+
+4. Run the following command for Generating Completions using Tuned Model(s)
+> python ./src/completion/completion_gen.py --config_path ./configs/comp_gen/task_gen.yaml 
