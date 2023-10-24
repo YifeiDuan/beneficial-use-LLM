@@ -1,0 +1,18 @@
+  meta:
+    name: SupervisedFineTuning
+  dir:
+    cache_dir: "/dccstor/yifei01/.cache/huggingface/"
+    data_dir: "./data/Task_SFT/3task/MultipleChoice/"
+  model:
+    path: "databricks/dolly-v2-3b"
+  task:
+    name: "3task"
+  hyper:
+    num_train_epochs: 100
+    batch_size: 4
+    learning_rate: 2e-5
+    weight_decay: 0.01
+  log:
+    evaluation_strategy: "epoch"
+    logging_strategy: "epoch"
+    save_steps: 6172

@@ -1,0 +1,16 @@
+  meta:
+    name: CausalLanguagModeling
+  dir:
+    cache_dir: "/dccstor/yifei01/.cache/huggingface/"
+    data_dir: "./data/CLM/"
+  model:
+    path: "EleutherAI/pythia-2.8b"
+  hyper:
+    proc_batch_size: 1000
+    num_proc: 4
+    num_train_epochs: 100
+    learning_rate: 2e-5
+    weight_decay: 0.01
+  log:
+    evaluation_strategy: "epoch"
+    save_steps: 200
