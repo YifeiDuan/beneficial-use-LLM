@@ -9,13 +9,8 @@
 3. Run the following command for Casusal Langueg Modeling
 > python ./src/sft_lora.py --config_path ./configs/CLM.yaml 
 
-<<<<<<< HEAD
 4. Run the following command for generating completions using tuned Model(s)
 > python ./src/completion/completion_gen.py --config_path ./configs/comp_gen/task_gen.yaml 
 
 5. Run the following command for evaluating the generated completions
-> python ./src/completion/performance_eval.py --config_path ./configs/comp_gen/task_gen.yaml 
-=======
-4. Run the following command for Generating Completions using Tuned Model(s)
-> python ./src/completion/completion_gen.py --config_path ./configs/comp_gen/task_gen.yaml 
->>>>>>> b9fe2754bd5fc647bc33f3901a1c1553e2822cff
+> python ./src/completion/performance_eval.py --config_path ./configs/comp_gen/task_gen.yaml
