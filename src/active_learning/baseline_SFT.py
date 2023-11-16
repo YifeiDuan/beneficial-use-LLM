@@ -33,6 +33,7 @@ if __name__ == '__main__':
     with open(args.config_path) as cf_file:
         config = yaml.safe_load(cf_file.read())
         train_size  = config['hyper']['train_size']
+        step  = config['hyper']['step']
         cache_dir = config['dir']['cache_dir']
         data_dir = config['dir']['data_dir']
         model_checkpoint = config['model']['path']
@@ -56,12 +57,20 @@ if __name__ == '__main__':
     model = AutoModelForCausalLM.from_pretrained(model_checkpoint, cache_dir=cache_dir)
     model = get_peft_model(model, peft_config).to(DEVICE)
 
-    df_train = pd.read_csv(data_dir+"df_train_AL.csv")
+    df_train_init = pd.read_csv(data_dir+"df_AL_train_200.csv")
+    df_val_var = pd.read_csv(data_dir+"df_AL_val_var.csv")
+    df_val_fix = pd.read_csv(data_dir+"df_AL_val_fix.csv")
 
-    df_train_AL = df_train[df_train.index.isin([i for i in range(train_size)])]
-    df_train_AL.to_csv(data_dir + "df_train_AL_{}.csv".format(train_size), index=False)
+    df_train_incr = df_val_var.loc[:(train_size-200-1)]
+    df_val_incr = df_val_var.loc[(train_size-200):]
+
+    df_train = pd.concat([df_train_init, df_train_incr], ignore_index=True)
+    df_val = pd.concat([df_val_fix, df_val_incr], ignore_index=True)
+
+    df_train.to_csv(data_dir + "df_AL_baseline_train_{}.csv".format(train_size), index=False)
+    df_train.to_csv(data_dir + "df_AL_baseline_val_{}.csv".format(train_size), index=False)
     
-    datasets = load_dataset("csv", data_files={"train": data_dir+"df_train_AL_{}.csv".format(train_size), "val": data_dir+"df_val_AL.csv"})
+    datasets = load_dataset("csv", data_files={"train": data_dir+"df_AL_baseline_train_{}.csv".format(train_size), "val": data_dir+"df_AL_baseline_val_{}.csv".format(train_size)})
 
 
     response_template = " ### Completion:"
@@ -70,7 +79,7 @@ if __name__ == '__main__':
     model_name = model_checkpoint.split("/")[-1]
 
     training_args = TrainingArguments(
-        f"/dccstor/yifei01/bu_multitask/ActiveLearning/{model_name}-{task}-SFT-{train_size}",
+        f"/dccstor/yifei01/bu_multitask/ActiveLearning/baseline/{model_name}-{task}-SFT-{train_size}",
         evaluation_strategy = evaluation_strategy,
         per_device_train_batch_size = batch_size,
         per_device_eval_batch_size = batch_size,

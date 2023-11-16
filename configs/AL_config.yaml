@@ -9,6 +9,7 @@
     name: "3task"
   hyper:
     train_size: 200
+    step: 10
     num_train_epochs: 50
     batch_size: 4
     learning_rate: 2e-5
