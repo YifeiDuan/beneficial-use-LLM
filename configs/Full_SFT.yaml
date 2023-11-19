@@ -1,15 +1,18 @@
   meta:
     name: SupervisedFineTuning
+  task:
+    name: "3task"
+  scheme:
+    name: "MultipleChoice"
+    if_unknown: "with_unknown"
   dir:
     cache_dir: "/dccstor/yifei01/.cache/huggingface/"
-    data_dir: "./data/Full_SFT/"
+    data_super_dir: "/u/duanyf99/multitask/"
+    model_super_dir: "/dccstor/yifei01/bu_multitask/"
   model:
     path: "EleutherAI/pythia-2.8b"
-  hyper:
-    num_train_epochs: 100
-    batch_size: 8
-    learning_rate: 2e-5
+  hyperparams:
+    num_train_epochs: 20
+    batch_size: 4
+    learning_rate: 0.00002
     weight_decay: 0.01
-  log:
-    evaluation_strategy: "epoch"
-    save_steps: 200
