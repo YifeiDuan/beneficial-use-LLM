@@ -10,40 +10,46 @@ import argparse, yaml
 import os
 
 
-task = "3task"
-cache_dir = "/dccstor/yifei01/.cache/huggingface/"
-data_dir = "/u/duanyf99/multitask/ActiveLearning/Data/"
-
-model_name = "pythia-2.8b"
-
-tokenizer_dir = "EleutherAI/"
-
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config_path', default="~/multitask/ActiveLearning/configs/AL_config.yaml")
+    parser.add_argument('--config_path', default="~/multitask/ActiveLearning/baseline/configs/AL_config.yaml")
     args = parser.parse_args()
 
     with open(args.config_path) as cf_file:
         config = yaml.safe_load(cf_file.read())
-        train_size  = config['hyper']['train_size']
+        train_size  = config['AL_hyper']['train_size']
+        step = config['AL_hyper']['step']
+        task = config["task"]["name"]
+        model_path = config["model"]["path"]
+        cache_dir = config["dir"]["cache_dir"]
+        data_dir = config["dir"]["data_dir"]
+        model_super_dir = config["dir"]["model_dir"]
+        num_epochs = config["hyperparams"]["num_train_epochs"]
+        lr = config["hyperparams"]["learning_rate"]
+        weight_decay = config["hyperparams"]["weight_decay"]
+        batch_size = config["hyperparams"]["batch_size"]
     
+    model_name = model_path.split("/")[-1]
 
-    model_dir = "/dccstor/yifei01/bu_multitask/ActiveLearning/{}-{}-SFT-{}/".format(model_name, task, train_size)
+    model_dir = model_super_dir + "{}-{}-SFT-{}/".format(model_name, task, train_size)
+
     if not os.path.exists(model_dir + "Completions"):
         os.makedirs(model_dir + "Completions")
-    checkpoint_list = [steps for steps in range(9*train_size, 0, -train_size)]
+    
+    save_step = 4*int(train_size/batch_size)
+    checkpoint_list = [steps for steps in range(9*save_step, 6*save_step, -save_step)]
 
     # 1. load data
-    df_train = pd.read_csv(data_dir + "df_train_AL_{}.csv".format(train_size))
-    df_val = pd.read_csv(data_dir + "df_val_AL.csv")
+    df_train = pd.read_csv(data_dir + "df_AL_baseline_train_{}.csv".format(train_size))
+    df_val = pd.read_csv(data_dir + "df_AL_baseline_val_{}.csv".format(train_size))
 
     train_ids = random.sample(range(len(df_train)), 100)
-    val_ids = random.sample(range(len(df_val)), 100)
+    val_ids = [i for i in range(len(df_val))]
 
     # 2. load tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_dir + model_name, use_fast=True, cache_dir=cache_dir)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True, cache_dir=cache_dir)
 
     # 3. generate completions for examples
     # 3.1 train

@@ -9,12 +9,9 @@ from transformers import Trainer, TrainingArguments
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
-import torch
 from peft import get_peft_config, get_peft_model, PromptTuningInit, LoraConfig, TaskType, PeftType
 
 import argparse, yaml
-
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def formatting_prompts_func(examples):
@@ -27,24 +24,23 @@ def formatting_prompts_func(examples):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config_path', default="~/multitask/ActiveLearning/configs/AL_config.yaml")
+    parser.add_argument('--config_path', default="~/multitask/ActiveLearning/baseline/configs/AL_config.yaml")
     args = parser.parse_args()
 
     with open(args.config_path) as cf_file:
         config = yaml.safe_load(cf_file.read())
-        train_size  = config['hyper']['train_size']
-        step  = config['hyper']['step']
-        cache_dir = config['dir']['cache_dir']
-        data_dir = config['dir']['data_dir']
-        model_checkpoint = config['model']['path']
-        task = config['task']['name']
-        num_train_epochs = config['hyper']['num_train_epochs']
-        batch_size = config['hyper']['batch_size']
-        learning_rate = config['hyper']['learning_rate']
-        weight_decay = config['hyper']['weight_decay']
-        evaluation_strategy = config['log']['evaluation_strategy']
-        logging_strategy = config['log']['logging_strategy']
-
+        train_size  = config['AL_hyper']['train_size']
+        step = config['AL_hyper']['step']
+        task = config["task"]["name"]
+        model_checkpoint = config["model"]["path"]
+        cache_dir = config["dir"]["cache_dir"]
+        data_dir = config["dir"]["data_dir"]
+        model_dir = config["dir"]["model_dir"]
+        num_epochs = config["hyperparams"]["num_train_epochs"]
+        lr = config["hyperparams"]["learning_rate"]
+        weight_decay = config["hyperparams"]["weight_decay"]
+        batch_size = config["hyperparams"]["batch_size"]
+    
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True, cache_dir=cache_dir)
 
     if tokenizer.pad_token_id is None:
@@ -55,7 +51,7 @@ if __name__ == '__main__':
     )
 
     model = AutoModelForCausalLM.from_pretrained(model_checkpoint, cache_dir=cache_dir)
-    model = get_peft_model(model, peft_config).to(DEVICE)
+    model = get_peft_model(model, peft_config).to("cuda")
 
     df_train_init = pd.read_csv(data_dir+"df_AL_train_200.csv")
     df_val_var = pd.read_csv(data_dir+"df_AL_val_var.csv")
@@ -78,16 +74,18 @@ if __name__ == '__main__':
 
     model_name = model_checkpoint.split("/")[-1]
 
+    save_steps = 4*int(len(df_train)/batch_size)
+
     training_args = TrainingArguments(
-        f"/dccstor/yifei01/bu_multitask/ActiveLearning/baseline/{model_name}-{task}-SFT-{train_size}",
-        evaluation_strategy = evaluation_strategy,
+        f"{model_dir}{model_name}-{task}-SFT-{train_size}",
+        evaluation_strategy = "epoch",
         per_device_train_batch_size = batch_size,
         per_device_eval_batch_size = batch_size,
-        logging_strategy=logging_strategy,
-        num_train_epochs=num_train_epochs,
-        learning_rate=learning_rate,
+        logging_strategy="epoch",
+        save_steps = save_steps,
+        num_train_epochs=num_epochs,
+        learning_rate=lr,
         weight_decay=weight_decay,
-        save_steps = train_size,
         push_to_hub=False,
     )
 
