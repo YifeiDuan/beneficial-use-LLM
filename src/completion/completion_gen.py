@@ -5,49 +5,57 @@ import random
 from tqdm.notebook import tqdm
 import evaluate
 from peft import PeftModel, PeftModelForCausalLM, PeftConfig
-import torch
 
 import argparse, yaml
-
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+import os
 
 
 if __name__ == '__main__':
+    # 1. load data
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config_path', default="./configs/comp_gen/task_gen.yaml")
-
+    parser.add_argument('--config_path', default="~/multitask/with_unknown/configs/pythia-2.8b-3task-MC.yaml")
     args = parser.parse_args()
 
     with open(args.config_path) as cf_file:
         config = yaml.safe_load(cf_file.read())
-        cache_dir = config['dir']['cache_dir']
-        data_dir = config['dir']['data_dir']
-        tokenizer_dir = config['dir']['tokenizer_dir']
-        model_sup_dir = config['dir']['model_sup_dir']
-        model_name = config['model']['name']
-        checkpoint_list = config['model']['checkpoint_list']
-        task = config['task']['name']
-        num_train_epochs = config['hyper']['num_train_epochs']
-        batch_size = config['hyper']['batch_size']
-        learning_rate = config['hyper']['learning_rate']
-        weight_decay = config['hyper']['weight_decay']
-        evaluation_strategy = config['log']['evaluation_strategy']
-        logging_strategy = config['log']['logging_strategy']
-        save_steps = config['log']['save_steps']
-    
-    model_dir = model_sup_dir + "/{}-{}-SFT/".format(model_name, task)
+        task = config["task"]["name"]
+        model_path= config["model"]["path"]
+        scheme = config["scheme"]["name"]  # ItemInstruction or MultipleChoice
+        if_unknown = config["scheme"]["if_unknown"]  # with_unknown or without_unknown
+        cache_dir = config["dir"]["cache_dir"]
+        data_super_dir = config["dir"]["data_super_dir"]
+        model_super_dir = config["dir"]["model_super_dir"]
+        num_epochs = config["hyperparams"]["num_train_epochs"]
+        lr = config["hyperparams"]["learning_rate"]
+        weight_decay = config["hyperparams"]["weight_decay"]
+        batch_size = config["hyperparams"]["batch_size"]
 
-    # 1. load data
+    model_name = model_path.split("/")[-1]
+    model_dir = model_super_dir + "{}/{}/{}-{}-SFT/".format(if_unknown, scheme, model_name, task)
+    data_dir = data_super_dir + "{}/data/{}/".format(if_unknown, scheme)
+
     df_train = pd.read_csv(data_dir + "df_train.csv")
     df_val = pd.read_csv(data_dir + "df_val.csv")
 
-    train_ids = random.sample(range(len(df_train)), 100)
-    val_ids = random.sample(range(len(df_val)), 100)
+
+    save_steps = 4*int(len(df_train)/batch_size)  # save checkpoint every 4 epochs
+    final_step = num_epochs*int(len(df_train)/batch_size)
+    checkpoint_list = [steps for steps in range(final_step, 0, -save_steps)]
+
+    if scheme == "MultipleChoice":
+        train_ids = random.sample(range(len(df_train)), 500)
+        val_ids = random.sample(range(len(df_val)), 500)
+    else:
+        train_ids = [i for i in range(len(df_train))]
+        val_ids = [i for i in range(len(df_val))]
 
     # 2. load tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_dir + model_name, use_fast=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
 
     # 3. generate completions for examples
+    if not os.path.exists(model_dir + "Completions"):
+        os.makedirs(model_dir + "Completions")
+
     # 3.1 train
     train_samples = []
     for idx in train_ids:
@@ -75,13 +83,13 @@ if __name__ == '__main__':
         print("Checkpoint: {}".format(checkpoint))
 
         config = PeftConfig.from_pretrained(model_dir + 'checkpoint-{}/'.format(checkpoint))
-        model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path).to(DEVICE)
+        model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path).to("cuda")
         model = PeftModelForCausalLM.from_pretrained(model, 
-                                                    model_dir + 'checkpoint-{}/'.format(checkpoint)).to(DEVICE)
+                                                    model_dir + 'checkpoint-{}/'.format(checkpoint)).to("cuda")
 
         print("Start inferring for training examples: ")
         for i in tqdm(range(len(train_samples)), total=len(train_samples)):
-            input_ids = tokenizer.encode(train_samples[i]["prompt"], return_tensors='pt').to(DEVICE)
+            input_ids = tokenizer.encode(train_samples[i]["prompt"], return_tensors='pt').to("cuda")
             beam_output = model.generate(
                             input_ids=input_ids,
                             max_new_tokens=128,
@@ -104,7 +112,7 @@ if __name__ == '__main__':
 
         print("Start inferring for valing examples: ")
         for i in tqdm(range(len(val_samples)), total=len(val_samples)):
-            input_ids = tokenizer.encode(val_samples[i]["prompt"], return_tensors='pt').to(DEVICE)
+            input_ids = tokenizer.encode(val_samples[i]["prompt"], return_tensors='pt').to("cuda")
             beam_output = model.generate(
                             input_ids=input_ids,
                             max_new_tokens=128,
