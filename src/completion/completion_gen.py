@@ -63,6 +63,8 @@ if __name__ == '__main__':
             {
                 "DOI": list(df_train["DOI"])[idx],
                 "prompt": "### Instructions: " + list(df_train["prompt"])[idx] + "\n" + "### Completion: ",
+                "kw_group": df_train["kw_group"][idx],
+                "pos_neg": df_train["pos_neg"][idx],
                 "comp_true": list(df_train["completion"])[idx].strip()
             }
         )
@@ -73,6 +75,8 @@ if __name__ == '__main__':
             {
                 "DOI": list(df_val["DOI"])[idx],
                 "prompt": "### Instructions: " + list(df_val["prompt"])[idx] + "\n" + "### Completion: ",
+                "kw_group": df_val["kw_group"][idx],
+                "pos_neg": df_val["pos_neg"][idx],
                 "comp_true": list(df_val["completion"])[idx].strip()
             }
         )
