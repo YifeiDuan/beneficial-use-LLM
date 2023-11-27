@@ -1,4 +1,5 @@
 import transformers
+import math
 from datasets import load_dataset, Dataset
 from datasets import ClassLabel
 import random
@@ -105,7 +106,7 @@ if __name__ == '__main__':
     model_name = model_checkpoint.split("/")[-1]
 
     prev_train_size = train_size - step
-    prev_save_steps = 4*int(prev_train_size/batch_size)
+    prev_save_steps = 4*math.ceil(prev_train_size/batch_size)
     prev_checkpoint = 9*prev_save_steps
     comp_val_prev = pd.read_csv(model_dir + "{}-{}-SFT-{}/".format(model_name, task, prev_train_size) + "Completions/{}_val.csv".format(prev_checkpoint))
 
@@ -131,7 +132,7 @@ if __name__ == '__main__':
     collator = DataCollatorForCompletionOnlyLM(response_template, tokenizer=tokenizer)
 
 
-    save_steps = 4*int(len(df_train)/batch_size)
+    save_steps = 4*math.ceil(len(df_train)/batch_size)
 
     training_args = TrainingArguments(
         f"{model_dir}{model_name}-{task}-SFT-{train_size}",
@@ -155,4 +156,4 @@ if __name__ == '__main__':
         data_collator=collator,
     )
 
-    trainer.train() 
+    trainer.train()
