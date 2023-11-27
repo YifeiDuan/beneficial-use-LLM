@@ -42,6 +42,7 @@ if __name__ == '__main__':
         lr = config["hyperparams"]["learning_rate"]
         weight_decay = config["hyperparams"]["weight_decay"]
         batch_size = config["hyperparams"]["batch_size"]
+        save_epoch_step = config["save"]["every_num_epoch"]
 
     model_dir = model_super_dir + "{}/{}/".format(if_unknown, scheme)
     data_dir = data_super_dir + "{}/data/{}/".format(if_unknown, scheme)
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     model = get_peft_model(model, peft_config).to("cuda")
 
     df_train = pd.read_csv(data_dir+"df_train.csv")
-    save_steps = 4*int(len(df_train)/4)
+    save_steps = save_epoch_step*int(len(df_train)/batch_size)
 
 
     datasets = load_dataset("csv", data_files={"train": data_dir+"df_train.csv", "val": data_dir+"df_val.csv"})
