@@ -202,13 +202,12 @@ if __name__ == '__main__':
     for checkpoint in checkpoint_list:
         print("Checkpoint: {}".format(checkpoint))
 
-        config = PeftConfig.from_pretrained(model_dir + 'checkpoint-{}/'.format(checkpoint))
+        config = PeftConfig.from_pretrained(model_cp_dir + 'checkpoint-{}/'.format(checkpoint))
         model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path).to("cuda")
         model = PeftModelForCausalLM.from_pretrained(model, 
-                                                    model_dir + 'checkpoint-{}/'.format(checkpoint)).to("cuda")
+                                                    model_cp_dir + 'checkpoint-{}/'.format(checkpoint)).to("cuda")
 
     ## 4.2 val
-        print("Checkpoint: {}".format(checkpoint))
 
         print("Start inferring for valing examples: ")
         for i in tqdm(range(len(val_samples)), total=len(val_samples)):
