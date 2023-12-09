@@ -23,7 +23,7 @@ if __name__ == '__main__':
         inference_task = config["task"]["inference"]
         MC_shuffle = config["MC_init"]["shuffle"]
         tokenizer_path = config["model"]["path"]
-        checkpoint = config["model"]["path"]
+        checkpoint = config["model"]["checkpoint"]
         scheme = config["scheme"]["name"]  # ItemInstruction or MultipleChoice
         if_unknown = config["scheme"]["if_unknown"]  # with_unknown or without_unknown
         cache_dir = config["dir"]["cache_dir"]
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     
     # 3.2 val
     all_info = []
-    for idx in len(df_prompt):
+    for idx in range(len(df_prompt)):
         all_info.append(
             {
                 "DOI": list(df_prompt["DOI"])[idx],
