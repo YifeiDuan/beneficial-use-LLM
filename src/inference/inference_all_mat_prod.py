@@ -50,6 +50,7 @@ if __name__ == '__main__':
     for i in range(len(df_lookup)):
         term = df_lookup.loc[i, "term"]
         option = df_lookup.loc[i, "option"]
+        option = f"{option:02}"
         option_to_term[option] = term
     
     
@@ -88,7 +89,7 @@ if __name__ == '__main__':
 
     print("Start converting options to terms: ")
     for i in tqdm(range(len(all_info)), total=len(all_info)):
-        comp_list_option = all_info[i]["comp_option"].replace("[", "").replace("]", "").replace("'", "").split(",")
+        comp_list_option = all_info[i]["comp_option"].replace("[", "").replace("]", "").replace("\'", "").replace("\"", "").split(",")
         comp_list_option = [option.strip() for option in comp_list_option]
         comp_list_term = [option_to_term[option] for option in comp_list_option if option in option_to_term.keys()]
 
