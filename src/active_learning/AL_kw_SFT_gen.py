@@ -38,12 +38,12 @@ def kw_acc_calc(df):
         df["precision"][idx] = count_shared/len(comp_true)
         df["recall"][idx]    = count_shared/len(comp_pred)
 
-        kw_acc = {}
-        for kw in ["k1", "k2", "k3", "k4", "k5"]:
-            kw_precision = df[(df["kw_group"]==kw)]["precision"].mean()
-            kw_recall = df[(df["kw_group"]==kw)]["recall"].mean()
-            kw_F1 = 2*kw_precision*kw_recall/(kw_precision+kw_recall)
-            kw_acc[kw] = kw_F1
+    kw_acc = {}
+    for kw in ["k1", "k2", "k3", "k4", "k5"]:
+        kw_precision = df[(df["kw_group"]==kw)]["precision"].mean()
+        kw_recall = df[(df["kw_group"]==kw)]["recall"].mean()
+        kw_F1 = 2*kw_precision*kw_recall/(kw_precision+kw_recall)
+        kw_acc[kw] = kw_F1
 
     return kw_acc
 
