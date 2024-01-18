@@ -48,9 +48,11 @@ def condPP_sample(df_train_prev, df_val_prev_with_condPP, step=10):
 
     df_val_prev_with_condPP = df_val_prev_with_condPP.sort_values(by=["condPP"], ascending=False)
     df_val_prev_with_condPP = df_val_prev_with_condPP.reset_index().drop(columns=["comp_pred"]).rename(columns={"comp_true":"completion"})
+    df_val_prev_with_condPP = df_val_prev_with_condPP[["DOI", "prompt", "completion", "kw_group"]]
+
     df_train_add = df_val_prev_with_condPP.loc[:(step-1)]
-        
     df_train = pd.concat([df_train_prev, df_train_add], ignore_index=True)
+    
     df_val = df_val_prev_with_condPP.loc[step:]
 
     return df_train, df_val
@@ -107,6 +109,7 @@ if __name__ == '__main__':
 
     # read in previous train sets
     df_train_prev = pd.read_csv(data_dir+"df_AL_condPP_train_{}.csv".format(prev_train_size))
+    df_train_prev = df_train_prev[["DOI", "prompt", "completion", "kw_group"]]
     #df_val_prev = pd.read_csv(data_dir+"df_AL_condPP_val_{}.csv".format(prev_train_size))
    
 
