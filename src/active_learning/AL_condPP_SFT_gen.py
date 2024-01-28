@@ -40,6 +40,10 @@ def condPP_calc(df, model, tokenizer, semantic_class):
 
         condPP = conditional_perplexity(model, tokenizer, context, comp_pred, semantic_class=semantic_class)
         df["condPP"][idx] = condPP
+
+        # resume the original prompt
+        prompt = context.split("### Completion: ")[0].split("### Instructions: ")[1]
+        df["prompt"][idx] = prompt
     
     return df
 
@@ -52,7 +56,7 @@ def condPP_sample(df_train_prev, df_val_prev_with_condPP, step=10):
 
     df_train_add = df_val_prev_with_condPP.loc[:(step-1)]
     df_train = pd.concat([df_train_prev, df_train_add], ignore_index=True)
-    
+
     df_val = df_val_prev_with_condPP.loc[step:]
 
     return df_train, df_val
