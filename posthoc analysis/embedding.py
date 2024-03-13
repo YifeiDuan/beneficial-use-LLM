@@ -4,7 +4,7 @@ from transformers import AutoTokenizer
 import random
 from tqdm.notebook import tqdm
 import evaluate
-from peft import PeftModel, PeftModelForCausalLM, PeftConfig
+from peft import PeftModel, PeftModelForCausalLM, PeftConfig, get_peft_config, get_peft_model, LoraConfig, TaskType
 import torch
 
 import argparse, yaml
@@ -53,6 +53,10 @@ if __name__ == '__main__':
         model = PeftModelForCausalLM.from_pretrained(model, model_path).to("cuda")
     elif version == "pretrained":
         model = AutoModelForCausalLM.from_pretrained(model_path).to("cuda")
+        peft_config = LoraConfig(
+                task_type=TaskType.CAUSAL_LM,
+            )
+        model = get_peft_model(model, peft_config).to("cuda")
 
 
     # 5. perform embeddings and save
@@ -81,6 +85,6 @@ if __name__ == '__main__':
         embedding_records.append(record)
 
     embeddings = torch.cat([item["paragraph_embedding"] for item in embedding_records])
-    torch.save(embeddings, save_path + f"{model}_{version}_checkpoint{checkpoint}.pt")
+    torch.save(embeddings, save_path + f"{model_name}_{version}_checkpoint{checkpoint}.pt")
     
     
