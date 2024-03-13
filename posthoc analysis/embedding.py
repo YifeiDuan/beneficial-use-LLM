@@ -27,7 +27,7 @@ if __name__ == '__main__':
         scheme = config["scheme"]["name"]  # ItemInstruction or MultipleChoice
         if_unknown = config["scheme"]["if_unknown"]  # with_unknown or without_unknown
         cache_dir = config["dir"]["cache_dir"]
-        analysis_data_dir = config["dir"]["embed_data_dir"]
+        analysis_data_dir = config["dir"]["analysis_data_dir"]
         model_super_dir = config["dir"]["model_super_dir"]
 
     model_name = tokenizer_path.split("/")[-1]
