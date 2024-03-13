@@ -1,0 +1,17 @@
+  meta:
+    name: GetEmbeddings
+  task:
+    SFT: "3task"
+  scheme:
+    name: "MultipleChoice"
+    if_unknown: "with_unknown"
+  MC_init:
+    shuffle: 1
+  dir:
+    cache_dir: "/dccstor/yifei01/.cache/huggingface/"
+    analysis_data_dir: "/u/duanyf99/multitask/posthoc_analysis/"
+    model_super_dir: "/dccstor/yifei01/bu_multitask/"
+  model:
+    path: "EleutherAI/pythia-2.8b"
+    version: "finetuned"
+    checkpoint: 7080
