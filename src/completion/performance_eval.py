@@ -58,7 +58,7 @@ if __name__ == '__main__':
         metrics = dict(rouge_results)
         metrics["checkpoint"] = checkpoint
         metrics["precision"] = df_train_comp["precision"].mean()
-        metrics["precall"] = df_train_comp["recall"].mean()
+        metrics["recall"] = df_train_comp["recall"].mean()
         metrics_train.append(metrics)
 
     df_metrics_train = pd.DataFrame.from_records(metrics_train)
