@@ -39,8 +39,8 @@ if __name__ == '__main__':
             comp_pred = [mat.strip() for mat in comp_pred]
             
             count_shared = len(set(comp_true).intersection(comp_pred))
-            df_train_comp["precision"][idx] = count_shared/len(comp_true)
-            df_train_comp["recall"][idx]    = count_shared/len(comp_pred)
+            df_train_comp["precision"][idx] = count_shared/len(comp_pred)
+            df_train_comp["recall"][idx]    = count_shared/len(comp_true)
         
         # rouge
         rouge_results = rouge.compute(predictions=list(df_train_comp["comp_pred"]), 
@@ -83,8 +83,8 @@ if __name__ == '__main__':
             comp_pred = [mat.strip() for mat in comp_pred]
 
             count_shared = len(set(comp_true).intersection(comp_pred))
-            df_val_comp["precision"][idx] = count_shared/len(comp_true)
-            df_val_comp["recall"][idx]    = count_shared/len(comp_pred)
+            df_val_comp["precision"][idx] = count_shared/len(comp_pred)
+            df_val_comp["recall"][idx]    = count_shared/len(comp_true)
         
         # rouge
         rouge_results = rouge.compute(predictions=list(df_val_comp["comp_pred"]), 
