@@ -12,7 +12,9 @@ This is the code base for a novel LLM-based framework for scientific literature 
 
 Named-Entity Recognition (NER) and Relation Extraction (RE) are considered crucial first steps in automated literature mining, and their applications in a wide range of scientific research corpora have proven effective. However, not all scientific research domains can capitalize on such techniques, as the direct, noun-phrase-like source text required for NER and subsequent RE can be a luxury in certain fields. This is especially pronounced in the emerging sustainability research fields, where the academic communication often involves highly linguistically complex context characterized by non-Noun-Phrase source text, unstandardized terminology, non-local and non-sequential semantic or syntactic dependency, and non-injective entity relations.
 
-<!-- Taking sustainable materials, and specifically sustainable concrete (building material) for example, the aforementioned linguistic complexity can be exemplified as follows: -->
+Taking sustainable materials, and specifically sustainable concrete (building material) for example, the aforementioned linguistic complexity can be exemplified as follows:
+
+<img src="figs/context_complexity.jpg" width="400"/>
 
 
 <a name="refs"></a> 
