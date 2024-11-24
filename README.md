@@ -28,7 +28,6 @@ The formulation of instruction-completion pairs can be exemplified as follows (t
 <img src="figs/multichoice_formulations.jpg" width="700"/>
 
 ## Workflow
--------------------------
 
 In general, for any scientific literature mining tasks with the papers pocessing some of the aforementioned challenges for direct extraction of desirable named entity information, the workflow of our work can be generalized to address the challenges.
 
