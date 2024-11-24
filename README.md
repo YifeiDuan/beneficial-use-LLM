@@ -1,4 +1,10 @@
-# beneficial-use-LLM
+<h3 align="left">Beneficial Use LLM</h3>
+
+# Introduction
+
+This is the code base for a novel LLM-based framework for scientific literature mining and topic analysis.
+
+# Code usage
 
 1. Run the following command for Supervised Fine Tuning of a model (specified in a config file with other arguments)
 > python ./src/sft_plain.py --config_path ./configs/Full_SFT.yaml (or Task_SFT.yaml)
