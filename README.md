@@ -6,7 +6,7 @@
 * [Correspondence](#corres)
 
 <a name="intro"></a>
-Introduction - Beneficial Use LLM
+Introduction - (Symbolized) Multichoice Instruction Tuning for LLM Literature Mining
 --------------------------
 
 This is the code base for a novel LLM-based framework for scientific literature mining and topic analysis.
@@ -26,6 +26,14 @@ Inspired by the multchoice problem-solving tasks in LLM studies, we reformulate 
 The formulation of instruction-completion pairs can be exemplified as follows (to be more comprehensive, we design 2 different schemes for choice notation and can therefore compare the resulting model performances):
 
 <img src="figs/multichoice_formulations.jpg" width="700"/>
+
+## Workflow
+-------------------------
+
+In general, for any scientific literature mining tasks with the papers pocessing some of the aforementioned challenges for direct extraction of desirable named entity information, the workflow of our work can be generalized to address the challenges.
+
+<img src="figs/workflow.jpg" width="700"/>
+
 
 <a name="refs"></a> 
 References
