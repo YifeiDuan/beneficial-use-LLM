@@ -14,7 +14,7 @@ Named-Entity Recognition (NER) and Relation Extraction (RE) are considered cruci
 
 Taking sustainable materials, and specifically sustainable concrete (building material) for example, the aforementioned linguistic complexity can be exemplified as follows:
 
-<img src="figs/context_complexity.jpg" width="400"/>
+<img src="figs/context_complexity.jpg" width="700"/>
 
 
 <a name="refs"></a> 
