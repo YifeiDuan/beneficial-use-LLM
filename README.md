@@ -25,7 +25,7 @@ Inspired by the multchoice problem-solving tasks in LLM studies, we reformulate 
 
 The formulation of instruction-completion pairs can be exemplified as follows (to be more comprehensive, we design 2 different schemes for choice notation and can therefore compare the resulting model performances):
 
-<img src="figs/multichoice_formulation.jpg" width="700"/>
+<img src="figs/multichoice_formulations.jpg" width="700"/>
 
 <a name="refs"></a> 
 References
