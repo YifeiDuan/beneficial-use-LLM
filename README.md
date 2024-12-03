@@ -106,5 +106,7 @@ python ./src/completion/performance_eval.py --config_path [YOUR_CONFIG_FILE]
 ```
 
 <a name="corres"></a>
+Correspondence
+--------------------------
 
-Yifei Duan ``` duanyf99@mit.edu ```
+Yifei Duan:  ``` duanyf99@mit.edu ```
