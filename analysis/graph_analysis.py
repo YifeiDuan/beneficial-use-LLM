@@ -5,6 +5,7 @@ import os
 import networkx as nx
 import matplotlib.pyplot as plt
 import seaborn as sns
+import random
 
 
 def weighted_jaccard_similarity_by_type(G, node1, node2, target_types):
@@ -110,7 +111,6 @@ def calculate_weighted_jaccard(save_dir = "Saved Data/G_withDOI_v0/", target_typ
 
     fig = heatmap.get_figure()
 
-    import os
     fig_dir = "../Figs/Graph & Link Pred/"
     if not os.path.exists(fig_dir):
         os.makedirs(fig_dir)
@@ -175,3 +175,98 @@ def link_pred_jaccard(save_dir = "Saved Data/G_withDOI_v0/", APP_process=True):
                 xticklabels=True, yticklabels=True)
     fig = heatmap.get_figure()
     fig.savefig("../Figs/Graph/new_mat_app_link_pred_matSim.jpg", bbox_inches="tight")
+
+
+
+def perturb_edge_weight(G, u, v):
+    current_weight = G[u][v]['weight'] if G.has_edge(u, v) else 0
+    if current_weight == 0:
+        G.add_edge(u, v, weight=current_weight + 1)
+    else:
+        G.add_edge(u, v, weight=current_weight + random.choice([-1,1]))
+    return G
+
+
+
+def perturb_graph_monte_carlo(G, p_threshold=0.8):
+    G_sampled = G.copy()
+
+    mat_nodes = [node for node, data in G.nodes(data=True) if data.get("node_type") == "material"]
+    app_nodes = [node for node, data in G.nodes(data=True) if data.get("node_type") == "application"]
+
+    for mat in mat_nodes:
+        for app in app_nodes:
+            random_p = random.uniform(0,1)
+            if random_p < p_threshold:
+                continue
+            else:   # IF [0,1)-uniformly-sampled random_p >= p_threshold
+                G_sampled = perturb_edge_weight(G_sampled, mat, app)  # THEN perturb the edge weight by 1 or -1
+    
+    return G_sampled
+        
+
+
+
+def calculate_weighted_jaccard_perturb(save_dir = "Saved Data/G_withDOI_v0/", target_types=["application"], num_samples=100, p_threshold=0.8):
+    # Read data
+    G = nx.read_graphml(save_dir + "Graph.graphml")
+
+    df = pd.read_csv("../Data (Reformatted)/df_all.csv")
+
+    all_mat = set(df[(df["mat"]!="unknown")]["mat"].dropna())
+    all_app = set(df[(df["app"]!="unknown")]["app"].dropna())
+    all_prod = set(df[(df["prod"]!="unknown")]["prod"].dropna())
+
+
+
+    mat_nodes = [node for node, data in G.nodes(data=True) if data.get("node_type") == "material"]
+    mat_pairs = []
+    for mat1 in mat_nodes:
+        for mat2 in mat_nodes:
+            mat_pairs.append((mat1, mat2))
+
+    
+    for i in range(num_samples):
+        # Perturb the graph
+        G_sampled = perturb_graph_monte_carlo(G, p_threshold=p_threshold)
+                    
+        # Calculate weighted jaccard
+        mat_jaccard_records = []
+
+        target_types = ["application"]
+        for (mat1, mat2) in mat_pairs:
+            record = {
+                "material1": mat1,
+                "material2": mat2,
+                "jaccard":   weighted_jaccard_similarity_by_type(G_sampled, mat1, mat2, target_types)
+            }
+            mat_jaccard_records.append(record)
+
+        df_mat_jaccard = pd.DataFrame.from_records(mat_jaccard_records)
+
+        df_mat_jaccard.to_csv(save_dir + f"MAT_Jaccard_weighted_perturbed_{i}.csv", index=False)
+
+
+
+        # Plot
+        data = df_mat_jaccard.pivot(index="material1", columns="material2", values="jaccard")
+        ##### Set mask
+        lower_triangle_indices = np.tril_indices(data.shape[0])
+        mask = np.ones(data.shape, dtype=bool)
+        mask[lower_triangle_indices] = False
+
+        sns.set(rc={'figure.figsize':(15, 12)})
+        heatmap = sns.heatmap(data, vmin=0, vmax=1, 
+                            cmap="hot",
+                            cbar_kws={'shrink': 0.3,
+                                        'label': "Jaccard Coefficient (Node Similarity)"}, 
+                            mask=mask,
+                            xticklabels=True, yticklabels=True)
+
+        fig = heatmap.get_figure()
+
+        fig_dir = "../Figs/Graph & Link Pred/perturbed/"
+        if not os.path.exists(fig_dir):
+            os.makedirs(fig_dir)
+
+        fig.savefig(fig_dir + f"mat_jaccard_weighted_heatmap_lower_triangle_perturbed_{i}.jpg", bbox_inches="tight")
