@@ -126,7 +126,7 @@ def link_pred_jaccard(save_dir = "Saved Data/G_withDOI_v0/", APP_process=True):
     all_prod = set(df[(df["prod"]!="unknown")]["prod"].dropna())
 
 
-    data_dir = "../Inference_Results/pythia-2.8B-MC/checkpoint-7080/"
+    data_dir = "../Inference_Results_Analysis_df/pythia-2.8B-MC/checkpoint-7080/"
     df_mat_app = pd.read_csv(data_dir + "mat_app_count.csv", index_col=0)
 
 
@@ -255,6 +255,7 @@ def calculate_weighted_jaccard_perturb(save_dir = "Saved Data/G_withDOI_v0/", ta
         mask = np.ones(data.shape, dtype=bool)
         mask[lower_triangle_indices] = False
 
+        plt.figure()
         sns.set(rc={'figure.figsize':(15, 12)})
         heatmap = sns.heatmap(data, vmin=0, vmax=1, 
                             cmap="hot",
@@ -270,3 +271,71 @@ def calculate_weighted_jaccard_perturb(save_dir = "Saved Data/G_withDOI_v0/", ta
             os.makedirs(fig_dir)
 
         fig.savefig(fig_dir + f"mat_jaccard_weighted_heatmap_lower_triangle_perturbed_{i}.jpg", bbox_inches="tight")
+
+
+
+def link_pred_jaccard_uq(save_dir = "Saved Data/G_withDOI_v0/", num_samples=100):
+
+    data_dir = "../Inference_Results_Analysis_df/pythia-2.8B-MC/checkpoint-7080/"
+    df_mat_app = pd.read_csv(data_dir + "new_mat_app_count.csv", index_col=0)
+
+
+    mat_app_count = df_mat_app.pivot(index="Application", columns="Material", values="count")
+    mat_app_norm_forAPP = mat_app_count.apply(lambda x: x/sum(x), axis = 1)
+
+    link_pred_perturbed_list = []
+
+    for i in range(num_samples):
+        df_mat_jaccard = pd.read_csv(save_dir + f"MAT_Jaccard_weighted_perturbed_{i}.csv")
+        jaccard = df_mat_jaccard.pivot(index="material1", columns="material2", values="jaccard")
+
+
+
+        new_mat_app = np.matmul(mat_app_norm_forAPP.to_numpy(), jaccard.to_numpy())
+        df_new_mat_app = mat_app_norm_forAPP.copy(deep=True)
+        df_new_mat_app.iloc[:,:] = new_mat_app
+
+
+        heatmap_diff = df_new_mat_app - mat_app_norm_forAPP
+
+
+        heatmap_diff_at0 = heatmap_diff[mat_app_norm_forAPP == 0]
+        heatmap_diff_at0.to_csv(data_dir + f"link_pred_jaccard_weighted_perturbed_{i}.csv")
+
+        link_pred_perturbed_list.append(heatmap_diff_at0)
+    
+
+    # Compute cell-wise mean and std for the link predictions
+    link_pred_mean = sum(link_pred_perturbed_list) / len(link_pred_perturbed_list)
+    link_pred_std = link_pred_mean.copy(deep=True)
+    link_pred_std.iloc[:,:] = np.std(np.array([df.values for df in link_pred_perturbed_list]), axis=0, ddof=0)
+
+    # Plot mean
+    plt.figure()
+    sns.set(rc={'figure.figsize':(20, 3)})
+    heatmap = sns.heatmap(link_pred_mean, cmap="hot", cbar_kws={'shrink': 1.0,
+                                                                'label': "Predicted Link Score"}, 
+                        vmax=1.0, 
+                        xticklabels=True, yticklabels=True)
+
+    heatmap.collections[0].colorbar.set_ticks([0.2, 0.4, 0.6, 0.8, 1.0])
+    heatmap.collections[0].colorbar.set_ticklabels(["0.200", "0.400", "0.600", 
+                                                    "0.800", "1.000"])
+
+    fig = heatmap.get_figure()
+    fig.savefig("../Figs/Graph & Link Pred/new_mat_app_link_pred_matSim_perturbed_mean.jpg", bbox_inches="tight")
+
+
+    # Plot std
+    plt.figure()
+    sns.set(rc={'figure.figsize':(20, 3)})
+    heatmap = sns.heatmap(link_pred_std, cmap="hot", cbar_kws={'shrink': 1.0,
+                                                                'label': "Predicted Link Score Uncertainty"}, 
+                        vmax=0.12, 
+                        xticklabels=True, yticklabels=True)
+
+    heatmap.collections[0].colorbar.set_ticks([0.02, 0.04, 0.06, 0.08, 0.10])
+    heatmap.collections[0].colorbar.set_ticklabels(["0.020", "0.040", "0.060", "0.080", "0.100"])
+
+    fig = heatmap.get_figure()
+    fig.savefig("../Figs/Graph & Link Pred/new_mat_app_link_pred_matSim_perturbed_std.jpg", bbox_inches="tight")
