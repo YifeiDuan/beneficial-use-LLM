@@ -56,128 +56,6 @@ def weighted_jaccard_similarity_by_type(G, node1, node2, target_types):
 
 
 
-def calculate_weighted_jaccard(save_dir = "Saved Data/G_withDOI_v0/", target_types=["application"]):
-    # Read data
-    save_dir = "Saved Data/G_withDOI_v0/"
-    G = nx.read_graphml(save_dir + "Graph.graphml")
-
-    df = pd.read_csv("../Data (Reformatted)/df_all.csv")
-
-    all_mat = set(df[(df["mat"]!="unknown")]["mat"].dropna())
-    all_app = set(df[(df["app"]!="unknown")]["app"].dropna())
-    all_prod = set(df[(df["prod"]!="unknown")]["prod"].dropna())
-
-
-
-    mat_nodes = [node for node, data in G.nodes(data=True) if data.get("node_type") == "material"]
-    mat_pairs = []
-    for mat1 in mat_nodes:
-        for mat2 in mat_nodes:
-            mat_pairs.append((mat1, mat2))
-
-    
-    # Calculate weighted jaccard
-    mat_jaccard_records = []
-
-    target_types = ["application"]
-    for (mat1, mat2) in mat_pairs:
-        record = {
-            "material1": mat1,
-            "material2": mat2,
-            "jaccard":   weighted_jaccard_similarity_by_type(G, mat1, mat2, target_types)
-        }
-        mat_jaccard_records.append(record)
-
-    df_mat_jaccard = pd.DataFrame.from_records(mat_jaccard_records)
-
-    df_mat_jaccard.to_csv(save_dir + "MAT_Jaccard_weighted.csv", index=False)
-
-
-
-    # Plot
-    data = df_mat_jaccard.pivot(index="material1", columns="material2", values="jaccard")
-    ##### Set mask
-    lower_triangle_indices = np.tril_indices(data.shape[0])
-    mask = np.ones(data.shape, dtype=bool)
-    mask[lower_triangle_indices] = False
-
-    sns.set(rc={'figure.figsize':(15, 12)})
-    heatmap = sns.heatmap(data, vmin=0, vmax=1, 
-                        cmap="hot",
-                        cbar_kws={'shrink': 0.3,
-                                    'label': "Jaccard Coefficient (Node Similarity)"}, 
-                        mask=mask,
-                        xticklabels=True, yticklabels=True)
-
-    fig = heatmap.get_figure()
-
-    fig_dir = "../Figs/Graph & Link Pred/"
-    if not os.path.exists(fig_dir):
-        os.makedirs(fig_dir)
-
-    fig.savefig(fig_dir + "mat_jaccard_weighted_heatmap_lower_triangle.jpg", bbox_inches="tight")
-
-
-
-def link_pred_jaccard(save_dir = "Saved Data/G_withDOI_v0/", APP_process=True):
-    df = pd.read_csv("../Data (Reformatted)/df_all.csv")
-    all_mat = set(df[(df["mat"]!="unknown")]["mat"].dropna())
-    all_app = set(df[(df["app"]!="unknown")]["app"].dropna())
-    all_prod = set(df[(df["prod"]!="unknown")]["prod"].dropna())
-
-
-    data_dir = "../Inference_Results_Analysis_df/pythia-2.8B-MC/checkpoint-7080/"
-    df_mat_app = pd.read_csv(data_dir + "mat_app_count.csv", index_col=0)
-
-
-    if APP_process:
-        removed_APPs = ["pore forming agent", "reinforced fibre", "superplasticizer"]
-        df_mat_app = df_mat_app[(~df_mat_app["Application"].isin(removed_APPs))]
-
-        for MAT in list(df_mat_app["Material"].unique()):
-            df_mat_app.loc[(df_mat_app["Material"] == MAT) & (df_mat_app["Application"] == "fine aggregate"), "count"] = \
-            int(df_mat_app.loc[(df_mat_app["Material"] == MAT) & (df_mat_app["Application"] == "fine aggregate"), "count"]) +\
-            int(df_mat_app.loc[(df_mat_app["Material"] == MAT) & (df_mat_app["Application"] == "aggregate"), "count"])
-            
-            df_mat_app.loc[(df_mat_app["Material"] == MAT) & (df_mat_app["Application"] == "coarse aggregate"), "count"] = \
-            int(df_mat_app.loc[(df_mat_app["Material"] == MAT) & (df_mat_app["Application"] == "coarse aggregate"), "count"]) +\
-            int(df_mat_app.loc[(df_mat_app["Material"] == MAT) & (df_mat_app["Application"] == "aggregate"), "count"])
-        df_mat_app = df_mat_app[(df_mat_app["Application"] != "aggregate")]
-    
-
-    df_mat_app.to_csv(data_dir + "new_mat_app_count.csv", index=False)
-
-
-
-
-    mat_app_count = df_mat_app.pivot(index="Application", columns="Material", values="count")
-    mat_app_norm_forAPP = mat_app_count.apply(lambda x: x/sum(x), axis = 1)
-
-
-
-    df_mat_jaccard = pd.read_csv(save_dir + "MAT_Jaccard.csv")
-    jaccard = df_mat_jaccard.pivot(index="material1", columns="material2", values="jaccard")
-
-
-
-    new_mat_app = np.matmul(mat_app_norm_forAPP.to_numpy(), jaccard.to_numpy())
-    df_new_mat_app = mat_app_norm_forAPP.copy(deep=True)
-    df_new_mat_app.iloc[:,:] = new_mat_app
-
-
-    heatmap_diff = df_new_mat_app - mat_app_norm_forAPP
-
-
-
-    heatmap_diff_at0 = heatmap_diff[mat_app_norm_forAPP == 0]
-    sns.set(rc={'figure.figsize':(20, 3)})
-    heatmap = sns.heatmap(heatmap_diff_at0, cmap="viridis", cbar_kws={'shrink': 1.0}, vmax=0.06, 
-                xticklabels=True, yticklabels=True)
-    fig = heatmap.get_figure()
-    fig.savefig("../Figs/Graph/new_mat_app_link_pred_matSim.jpg", bbox_inches="tight")
-
-
-
 def perturb_edge_weight(G, u, v):
     current_weight = G[u][v]['weight'] if G.has_edge(u, v) else 0
     if current_weight == 0:
@@ -339,3 +217,202 @@ def link_pred_jaccard_uq(save_dir = "Saved Data/G_withDOI_v0/", num_samples=100)
 
     fig = heatmap.get_figure()
     fig.savefig("../Figs/Graph & Link Pred/new_mat_app_link_pred_matSim_perturbed_std.jpg", bbox_inches="tight")
+
+
+
+def link_pred_subplot(data_dir = "../Inference_Results_Analysis_df/pythia-2.8B-MC/checkpoint-7080/"):
+    ### Read data
+    link_pred_mean = pd.read_csv(data_dir + "link_pred_jaccard_weighted_mean.csv",  index_col=0)
+    link_pred_std  = pd.read_csv(data_dir + "link_pred_jaccard_weighted_std.csv",  index_col=0)
+
+
+    ### Select APPs and MATs
+    link_pred_mean = link_pred_mean.drop(["additive"])
+    link_pred_std  = link_pred_std.drop(["additive"])
+
+    row = link_pred_mean.loc["lime-pozzolan cement"]
+
+    MATs_g1 = list(row[row>0.55].keys())
+    unwanted = ["lime", "fly ash", "cellulose", "silica", "natural pozzolan"]
+    for MAT in unwanted:
+        if MAT in MATs_g1:
+            MATs_g1.remove(MAT)
+    MATs_g2 = ["MSWI fly ash", "coal fly ash", "blast furnace slag", "silica fume", "nano-silica", "biomass fly ash", 
+            "copper tailing", "coal bottom ash", "waste glass", "basalt fiber", "oil palm shell"]
+
+    MATs = list(set(MATs_g1 + MATs_g2))
+    MATs.sort()
+
+    link_pred_mean = link_pred_mean[MATs]
+    link_pred_std  = link_pred_std[MATs]
+    
+
+    ### Sort columns
+    sorted_columns = link_pred_mean.loc['lime-pozzolan cement'].sort_values(ascending=False).index
+
+    link_pred_mean = link_pred_mean[sorted_columns]
+    link_pred_std  = link_pred_std[sorted_columns]
+
+
+    ### Plot
+    ##### Mean #####
+    plt.figure()
+    sns.set(rc={'figure.figsize':(9, 3)})
+    heatmap = sns.heatmap(link_pred_mean, cmap="hot", cbar_kws={'shrink': 1.0,
+                                                                    'label': "Predicted Link Score",
+                                                                    #'location': "top"
+                                                                    }, 
+                        vmax=1, 
+                        xticklabels=True, yticklabels=True)
+
+    heatmap.get_yticklabels()[-3].set_fontweight("bold")
+
+    heatmap.collections[0].colorbar.set_ticks([0.2, 0.4, 0.6, 0.8, 1.0])
+    heatmap.collections[0].colorbar.set_ticklabels(["0.200", "0.400", "0.600", 
+                                                    "0.800", "1.000"])
+
+    fig = heatmap.get_figure()
+    fig.savefig("../Figs/Graph & Link Pred/new_mat_app_link_pred_weighted_jaccard_sub_perturbed_mean.jpg", bbox_inches="tight", dpi=300)
+
+    ##### std #####
+    plt.figure()
+    sns.set(rc={'figure.figsize':(9, 3)})
+    heatmap = sns.heatmap(link_pred_std, cmap="hot", cbar_kws={'shrink': 1.0,
+                                                            'label': "Predicted Link Score Uncertainty"}, 
+                      vmax=0.12, 
+                      xticklabels=True, yticklabels=True)
+
+    heatmap.get_yticklabels()[-3].set_fontweight("bold")
+
+    heatmap.collections[0].colorbar.set_ticks([0.02, 0.04, 0.06, 0.08, 0.10])
+    heatmap.collections[0].colorbar.set_ticklabels(["0.020", "0.040", "0.060", "0.080", "0.100"])
+
+    fig = heatmap.get_figure()
+    fig.savefig("../Figs/Graph & Link Pred/new_mat_app_link_pred_weighted_jaccard_sub_perturbed_mean.jpg", bbox_inches="tight", dpi=300)
+
+
+
+
+
+
+
+
+def calculate_weighted_jaccard(save_dir = "Saved Data/G_withDOI_v0/", target_types=["application"]):
+    # Read data
+    save_dir = "Saved Data/G_withDOI_v0/"
+    G = nx.read_graphml(save_dir + "Graph.graphml")
+
+    df = pd.read_csv("../Data (Reformatted)/df_all.csv")
+
+    all_mat = set(df[(df["mat"]!="unknown")]["mat"].dropna())
+    all_app = set(df[(df["app"]!="unknown")]["app"].dropna())
+    all_prod = set(df[(df["prod"]!="unknown")]["prod"].dropna())
+
+
+
+    mat_nodes = [node for node, data in G.nodes(data=True) if data.get("node_type") == "material"]
+    mat_pairs = []
+    for mat1 in mat_nodes:
+        for mat2 in mat_nodes:
+            mat_pairs.append((mat1, mat2))
+
+    
+    # Calculate weighted jaccard
+    mat_jaccard_records = []
+
+    target_types = ["application"]
+    for (mat1, mat2) in mat_pairs:
+        record = {
+            "material1": mat1,
+            "material2": mat2,
+            "jaccard":   weighted_jaccard_similarity_by_type(G, mat1, mat2, target_types)
+        }
+        mat_jaccard_records.append(record)
+
+    df_mat_jaccard = pd.DataFrame.from_records(mat_jaccard_records)
+
+    df_mat_jaccard.to_csv(save_dir + "MAT_Jaccard_weighted.csv", index=False)
+
+
+
+    # Plot
+    data = df_mat_jaccard.pivot(index="material1", columns="material2", values="jaccard")
+    ##### Set mask
+    lower_triangle_indices = np.tril_indices(data.shape[0])
+    mask = np.ones(data.shape, dtype=bool)
+    mask[lower_triangle_indices] = False
+
+    sns.set(rc={'figure.figsize':(15, 12)})
+    heatmap = sns.heatmap(data, vmin=0, vmax=1, 
+                        cmap="hot",
+                        cbar_kws={'shrink': 0.3,
+                                    'label': "Jaccard Coefficient (Node Similarity)"}, 
+                        mask=mask,
+                        xticklabels=True, yticklabels=True)
+
+    fig = heatmap.get_figure()
+
+    fig_dir = "../Figs/Graph & Link Pred/"
+    if not os.path.exists(fig_dir):
+        os.makedirs(fig_dir)
+
+    fig.savefig(fig_dir + "mat_jaccard_weighted_heatmap_lower_triangle.jpg", bbox_inches="tight")
+
+
+
+def link_pred_jaccard(save_dir = "Saved Data/G_withDOI_v0/", APP_process=True):
+    df = pd.read_csv("../Data (Reformatted)/df_all.csv")
+    all_mat = set(df[(df["mat"]!="unknown")]["mat"].dropna())
+    all_app = set(df[(df["app"]!="unknown")]["app"].dropna())
+    all_prod = set(df[(df["prod"]!="unknown")]["prod"].dropna())
+
+
+    data_dir = "../Inference_Results_Analysis_df/pythia-2.8B-MC/checkpoint-7080/"
+    df_mat_app = pd.read_csv(data_dir + "mat_app_count.csv", index_col=0)
+
+
+    if APP_process:
+        removed_APPs = ["pore forming agent", "reinforced fibre", "superplasticizer"]
+        df_mat_app = df_mat_app[(~df_mat_app["Application"].isin(removed_APPs))]
+
+        for MAT in list(df_mat_app["Material"].unique()):
+            df_mat_app.loc[(df_mat_app["Material"] == MAT) & (df_mat_app["Application"] == "fine aggregate"), "count"] = \
+            int(df_mat_app.loc[(df_mat_app["Material"] == MAT) & (df_mat_app["Application"] == "fine aggregate"), "count"]) +\
+            int(df_mat_app.loc[(df_mat_app["Material"] == MAT) & (df_mat_app["Application"] == "aggregate"), "count"])
+            
+            df_mat_app.loc[(df_mat_app["Material"] == MAT) & (df_mat_app["Application"] == "coarse aggregate"), "count"] = \
+            int(df_mat_app.loc[(df_mat_app["Material"] == MAT) & (df_mat_app["Application"] == "coarse aggregate"), "count"]) +\
+            int(df_mat_app.loc[(df_mat_app["Material"] == MAT) & (df_mat_app["Application"] == "aggregate"), "count"])
+        df_mat_app = df_mat_app[(df_mat_app["Application"] != "aggregate")]
+    
+
+    df_mat_app.to_csv(data_dir + "new_mat_app_count.csv", index=False)
+
+
+
+
+    mat_app_count = df_mat_app.pivot(index="Application", columns="Material", values="count")
+    mat_app_norm_forAPP = mat_app_count.apply(lambda x: x/sum(x), axis = 1)
+
+
+
+    df_mat_jaccard = pd.read_csv(save_dir + "MAT_Jaccard.csv")
+    jaccard = df_mat_jaccard.pivot(index="material1", columns="material2", values="jaccard")
+
+
+
+    new_mat_app = np.matmul(mat_app_norm_forAPP.to_numpy(), jaccard.to_numpy())
+    df_new_mat_app = mat_app_norm_forAPP.copy(deep=True)
+    df_new_mat_app.iloc[:,:] = new_mat_app
+
+
+    heatmap_diff = df_new_mat_app - mat_app_norm_forAPP
+
+
+
+    heatmap_diff_at0 = heatmap_diff[mat_app_norm_forAPP == 0]
+    sns.set(rc={'figure.figsize':(20, 3)})
+    heatmap = sns.heatmap(heatmap_diff_at0, cmap="viridis", cbar_kws={'shrink': 1.0}, vmax=0.06, 
+                xticklabels=True, yticklabels=True)
+    fig = heatmap.get_figure()
+    fig.savefig("../Figs/Graph/new_mat_app_link_pred_matSim.jpg", bbox_inches="tight")
